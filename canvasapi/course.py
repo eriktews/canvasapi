@@ -1793,7 +1793,30 @@ class Course(CanvasObject):
             _kwargs=combine_kwargs(**kwargs),
         )
 
-    def get_user(self, user, user_id_type=None):
+    def get_uncollated_submissions(self, **kwargs):
+        """
+        Gives a paginated, uncollated list of submission versions for all matching
+        submissions in the context. This SubmissionVersion objects will not include
+        the new_grade or previous_grade keys, only the grade; same for graded_at
+        and grader.
+
+        :calls: `GET /api/v1/courses/:course_id/gradebook_history/feed\
+        <https://canvas.instructure.com/doc/api/gradebook_history.html#method\
+        .gradebook_history_api.feed>`_
+
+        :rtype: :class:`canvasapi.paginated_list.PaginatedList` of
+            :class:`canvasapi.gradebook_history.SubmissionVersion`
+        """
+
+        return PaginatedList(
+            SubmissionVersion,
+            self._requester,
+            "GET",
+            "courses/{}/gradebook_history/feed".format(self.id),
+            kwargs=combine_kwargs(**kwargs),
+        )
+
+    def get_user(self, user, user_id_type=None, **kwargs):
         """
         Retrieve a user by their ID. `user_id_type` denotes which endpoint to try as there are
         several different ids that can pull the same user record from Canvas.
@@ -1816,7 +1839,7 @@ class Course(CanvasObject):
             user_id = obj_or_id(user, "user", (User,))
             uri = "courses/{}/users/{}".format(self.id, user_id)
 
-        response = self._requester.request("GET", uri)
+        response = self._requester.request("GET", uri, _kwargs=combine_kwargs(**kwargs))
         return User(self._requester, response.json())
 
     def get_user_in_a_course_level_assignment_data(self, user):
